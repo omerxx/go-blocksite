@@ -1,0 +1,17 @@
+app:
+  blockTarget: "127.0.0.1"
+  stateFile: ".bs-state"
+
+blacklist:
+  - www.facebook.com
+  - www.ynet.co.il
+
+whitelist:
+  - somesite
+
+os:
+  macos: "/etc/hosts"
+  linux: "/etc/hosts"
+  windows: "/etc/hosts"
+
+
