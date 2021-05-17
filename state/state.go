@@ -9,15 +9,15 @@ import (
 	"github.com/spf13/viper"
 )
 
-type site struct {
+type Site struct {
 	Url string `json:"url"`
 }
 
 type State struct {
-	Blacklist []site `json:"blacklist"`
+	Blacklist []Site `json:"blacklist"`
 }
 
-func isListed(list []site, target string) bool {
+func isListed(list []Site, target string) bool {
 	for _, site := range list {
 		if site.Url == target {
 			return true
@@ -39,7 +39,7 @@ func AddMultiple(targets []string) {
 
 	for _, target := range targets {
 		if !isListed(state.Blacklist, target) {
-			site := site{Url: target}
+			site := Site{Url: target}
 			state.Blacklist = append(state.Blacklist, site)
 		}
 	}
@@ -71,7 +71,7 @@ func Remove(target string) {
 	defer jsonFile.Close()
 }
 
-func ListSites() []site {
+func ListSites() []Site {
 	stateFile := viper.GetString("app.state")
 	jsonFile, err := os.Open(stateFile)
 	if err != nil {
