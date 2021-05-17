@@ -1,7 +1,7 @@
-package statefile
+package state
 
 import (
-	"bufio"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -9,53 +9,77 @@ import (
 	"github.com/spf13/viper"
 )
 
-func createStateFileIfNeeded() {
-	fileName := stateFilePath()
-	if _, err := os.Stat(stateFilePath()); err == nil {
-		fmt.Printf("Using state file: %s", fileName)
-	} else if os.IsNotExist(err) {
-		err := ioutil.WriteFile(fileName, []byte(""), 0755)
-		if err != nil {
-			fmt.Printf("Unable to write file: %v", err)
+type site struct {
+	Url string `json:"url"`
+}
+
+type State struct {
+	Blacklist []site `json:"blacklist"`
+}
+
+func isListed(list []site, target string) bool {
+	for _, site := range list {
+		if site.Url == target {
+			return true
 		}
 	}
+	return false
 }
 
-func stateFilePath() string {
-	fileName := viper.GetString("app.stateFile")
-	return fmt.Sprintf("./%s", fileName)
-}
-
-func ListStateSites() []string {
-	file, err := os.Open(stateFilePath())
+func AddMultiple(targets []string) {
+	stateFile := viper.GetString("app.state")
+	jsonFile, err := os.Open(stateFile)
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
 	}
-	defer file.Close()
 
-	var lines []string
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		lines = append(lines, scanner.Text())
-	}
-	return lines
-}
+	var state State
+	byteValue, _ := ioutil.ReadAll(jsonFile)
+	json.Unmarshal(byteValue, &state)
 
-func AddToState(targets []string) {
-	createStateFileIfNeeded()
-	fileName := stateFilePath()
-	f, err := os.OpenFile(fileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		panic(err)
-	}
-	defer f.Close()
 	for _, target := range targets {
-		if _, err := f.WriteString(fmt.Sprintf("%s\n", target)); err != nil {
-			panic(err)
+		if !isListed(state.Blacklist, target) {
+			site := site{Url: target}
+			state.Blacklist = append(state.Blacklist, site)
 		}
 	}
+
+	file, _ := json.MarshalIndent(state, "", " ")
+	_ = ioutil.WriteFile(stateFile, file, 0644)
+	defer jsonFile.Close()
 }
 
-func RemoveFromState() {
-	createStateFileIfNeeded()
+func Remove(target string) {
+	stateFile := viper.GetString("app.state")
+	jsonFile, err := os.Open(stateFile)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	var state State
+	byteValue, _ := ioutil.ReadAll(jsonFile)
+	json.Unmarshal(byteValue, &state)
+
+	for i, site := range state.Blacklist {
+		if site.Url == target {
+			state.Blacklist = append(state.Blacklist[:i], state.Blacklist[i+1:]...)
+		}
+	}
+
+	file, _ := json.MarshalIndent(state, "", " ")
+	_ = ioutil.WriteFile(stateFile, file, 0644)
+	defer jsonFile.Close()
+}
+
+func ListSites() []site {
+	stateFile := viper.GetString("app.state")
+	jsonFile, err := os.Open(stateFile)
+	if err != nil {
+		fmt.Println(err)
+	}
+	var state State
+	byteValue, _ := ioutil.ReadAll(jsonFile)
+	json.Unmarshal(byteValue, &state)
+	defer jsonFile.Close()
+	return state.Blacklist
 }

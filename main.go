@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	state "github.com/omerxx/go-blocksite/state"
+	"github.com/omerxx/go-blocksite/state"
 
 	"github.com/spf13/viper"
 	"github.com/txn2/txeh"
@@ -45,30 +45,14 @@ func blockSite(hosts *txeh.Hosts, site string) {
 }
 
 func cleanBlocks(hosts *txeh.Hosts, sites []string) {
-	/*
-		TODO
-			Go through state
-			if one of state-sites is not in sites-list
-				remove from hosts
-				remove from statefile
-	*/
-
-	for _, stateSite := range state.ListStateSites() {
-		exists, _, _ := hosts.HostAddressLookup(stateSite)
+	for _, stateSite := range state.ListSites() {
+		exists, _, _ := hosts.HostAddressLookup(stateSite.Url)
 		if !exists {
-			hosts.RemoveHost(stateSite)
+			hosts.RemoveHost(stateSite.Url)
 			hosts.Save()
-			// TODO remove from statefile
+			state.Remove(stateSite.Url)
 		}
 	}
-
-	// for _, site := range sites {
-	// 	exists, _, _ := hosts.HostAddressLookup(fmt.Sprintf("www.%s", site))
-	// 	if !exists {
-	// 		hosts.RemoveHost(site)
-	// 		hosts.Save()
-	// 	}
-	// }
 }
 
 func main() {
@@ -79,7 +63,6 @@ func main() {
 	}
 	sites := getBlackListSites(hosts)
 	blockSites(hosts, sites)
-	state.AddToState(sites)
+	state.AddMultiple(sites)
 	cleanBlocks(hosts, sites)
-	state.RemoveFromState()
 }
