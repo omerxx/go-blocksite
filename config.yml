@@ -1,10 +1,12 @@
 app:
   blockTarget: "127.0.0.1"
-  stateFile: ".bs-state"
+  state: "state.json"
 
 blacklist:
   - www.facebook.com
   - www.ynet.co.il
+  - www.instagram.com
+  - www.twitter.com
 
 whitelist:
   - somesite
