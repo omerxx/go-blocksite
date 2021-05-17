@@ -27,7 +27,7 @@ func canWriteToHosts() bool {
 	return false
 }
 
-func getBlackListSites(hosts *txeh.Hosts) []string {
+func getBlackListConfig() []string {
 	return viper.GetStringSlice("blacklist")
 }
 
@@ -44,9 +44,22 @@ func blockSite(hosts *txeh.Hosts, site string) {
 	hosts.Save()
 }
 
-func cleanBlocks(hosts *txeh.Hosts, sites []string) {
-	for _, stateSite := range state.ListSites() {
-		exists, _, _ := hosts.HostAddressLookup(stateSite.Url)
+func isInList(object string, list []string) bool {
+	for _, element := range list {
+		if element == object {
+			return true
+		}
+	}
+	return false
+}
+
+func cleanBlocks(hosts *txeh.Hosts) {
+	blacklistConfiguredSites := getBlackListConfig()
+	stateSites := state.ListSites()
+	for _, stateSite := range stateSites {
+		exists := isInList(stateSite.Url, blacklistConfiguredSites)
+		fmt.Printf("statesite %s in configured is %t\n", stateSite.Url, exists)
+		// exists, _, _ := hosts.HostAddressLookup(stateSite.Url)
 		if !exists {
 			hosts.RemoveHost(stateSite.Url)
 			hosts.Save()
@@ -61,8 +74,8 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	sites := getBlackListSites(hosts)
-	blockSites(hosts, sites)
-	state.AddMultiple(sites)
-	cleanBlocks(hosts, sites)
+	blacklistConfiguredSites := getBlackListConfig()
+	blockSites(hosts, blacklistConfiguredSites)
+	state.AddMultiple(blacklistConfiguredSites)
+	cleanBlocks(hosts)
 }
