@@ -7,6 +7,7 @@ blacklist:
   - www.ynet.co.il
   - www.instagram.com
   - www.twitter.com
+  - www.linkedin.com
 
 whitelist:
   - somesite
