@@ -58,8 +58,6 @@ func cleanBlocks(hosts *txeh.Hosts) {
 	stateSites := state.ListSites()
 	for _, stateSite := range stateSites {
 		exists := isInList(stateSite.Url, blacklistConfiguredSites)
-		fmt.Printf("statesite %s in configured is %t\n", stateSite.Url, exists)
-		// exists, _, _ := hosts.HostAddressLookup(stateSite.Url)
 		if !exists {
 			hosts.RemoveHost(stateSite.Url)
 			hosts.Save()
