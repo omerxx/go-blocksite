@@ -6,16 +6,9 @@ import (
 	"io/ioutil"
 	"os"
 
+	. "github.com/omerxx/go-blocksite/types"
 	"github.com/spf13/viper"
 )
-
-type Site struct {
-	Url string `json:"url"`
-}
-
-type State struct {
-	Blacklist []Site `json:"blacklist"`
-}
 
 func isListed(list []Site, target string) bool {
 	for _, site := range list {
