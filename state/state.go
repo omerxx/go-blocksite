@@ -49,7 +49,13 @@ func AddMultiple(targets []string) {
 	defer jsonFile.Close()
 }
 
-func Remove(target string) {
+func RemoveMultiple(targets []string) {
+	for _, target := range targets {
+		remove(target)
+	}
+}
+
+func remove(target string) {
 	stateFile := viper.GetString("app.state")
 	jsonFile, err := os.Open(stateFile)
 	if err != nil {
