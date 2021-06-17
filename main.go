@@ -1,12 +1,10 @@
 package main
 
 import (
-	"fmt"
-
-	"github.com/omerxx/go-blocksite/state"
-
-	"github.com/spf13/viper"
 	"github.com/txn2/txeh"
+	"github.com/omerxx/go-blocksite/block"
+	"github.com/omerxx/go-blocksite/state"
+	"github.com/omerxx/go-blocksite/config"
 )
 
 // TODO
@@ -67,13 +65,17 @@ func cleanBlocks(hosts *txeh.Hosts) {
 }
 
 func main() {
-	readConfig()
+  configuration := config.ReadConfig()
+  config.RunPreflightChecks(configuration)
 	hosts, err := txeh.NewHostsDefault()
 	if err != nil {
 		panic(err)
 	}
-	blacklistConfiguredSites := getBlackListConfig()
-	blockSites(hosts, blacklistConfiguredSites)
+  blacklistConfiguredSites := []string{}
+  blacklistConfiguredSites = config.HandleOptions(blacklistConfiguredSites, configuration)
+	blacklistConfiguredSites = block.BlockSites(hosts, blacklistConfiguredSites)
+
 	state.AddMultiple(blacklistConfiguredSites)
-	cleanBlocks(hosts)
+	cleanedTargets := block.CleanBlocks(hosts, blacklistConfiguredSites)
+	state.RemoveMultiple(cleanedTargets)
 }
