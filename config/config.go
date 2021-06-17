@@ -2,23 +2,26 @@ package config
 
 import (
   "os"
-	"fmt"
+  "fmt"
   "errors"
   "golang.org/x/sys/unix"
-	"github.com/spf13/viper"
-	flag "github.com/spf13/pflag"
+  "github.com/spf13/viper"
+  flag "github.com/spf13/pflag"
+	"github.com/omerxx/go-blocksite/state"
+	. "github.com/omerxx/go-blocksite/types"
 )
 
 type Options struct {
   GlobalUnblock bool
-  Block         string
-  Unblock       string
+  Blocks        []string
+  Unblocks      []string
+  List          bool
 }
 
 type Config struct {
   blockRoute string
-  hostsfile   string
-  state       string
+  hostsfile  string
+  state      string
   blockList  []string
 }
 
@@ -31,6 +34,12 @@ func setConfigDefaults() (config Config) {
   return config
 }
 
+// func getConifg(configEntry string) string {
+//   if viper.GetString(configEntry) == "" {
+//     return defaultConfigs.con
+//   }
+// }
+
 func ReadConfig() (config Config){
 	viper.SetConfigName("config")
 	viper.SetConfigType("yml")
@@ -38,13 +47,21 @@ func ReadConfig() (config Config){
 	err := viper.ReadInConfig()
 	if err != nil {
     config = setConfigDefaults()
-		// panic(fmt.Errorf("Fatal error config file: %s \n", err))
 	}
   config.hostsfile = viper.GetString("app.hostsfile")
   config.blockRoute = viper.GetString("app.blockRoute")
   config.state = viper.GetString("app.state")
-  config.blockList = viper.GetStringSlice("blacklist")
+  config.blockList = append(config.blockList, readBlockList()...)
+
   return config
+}
+
+func readBlockList() []string {
+  configSitesEnabled := viper.GetBool("blocklist.enabled")
+  if configSitesEnabled {
+    return viper.GetStringSlice("blocklist.sites")
+  }
+  return []string{}
 }
 
 func addWsiteUrls(sites []string) (updatedList []string) {
@@ -64,19 +81,21 @@ func getBlackList(config Config) (list []string){
 
 func ParseOptions() Options {
 	var globalUnblock *bool = flag.BoolP("unblock-all", "U", false, "unblocks all urls")
-	var blockUrl *string = flag.StringP("block", "b", "", "blocks a given url")
-	var unblockUrl *string = flag.StringP("unblock", "u", "", "unblocks a given url")
+  var blockUrls *[]string = flag.StringSliceP("block", "b", []string{}, "blocks a given url(s)")
+	var unblockUrls *[]string = flag.StringSliceP("unblock", "u", []string{}, "unblocks given url(s)")
+	var list *bool = flag.BoolP("list", "l", false, "lists current blocked sites")
   flag.Parse()
   options := Options{
     GlobalUnblock: *globalUnblock,
-    Block: *blockUrl,
-    Unblock: *unblockUrl,
+    Blocks: *blockUrls,
+    Unblocks: *unblockUrls,
+    List: *list,
   }
   return options
 }
 
-func addUrlToList(list []string, url string) []string {
-  return append(list, url)
+func addUrlsToList(list []string, urls []string) []string {
+  return append(list, urls...)
 }
 
 func removeUrlFromList(list []string, url string) ([]string, error) {
@@ -88,23 +107,37 @@ func removeUrlFromList(list []string, url string) ([]string, error) {
   return nil, errors.New(fmt.Sprintf("Couldnt find %s in %+v", url, list))
 }
 
-func wsite(site string) (wsite string) {
-  return fmt.Sprintf("www.%s", site)
+// TODO: There's a bug here where when removing a non-existing URL it removes the entire state
+func removeUrlsFromList(list []string, urls []string) (updatedList []string, err error) {
+  updatedList = append(updatedList, list...)
+  for _, url := range urls {
+    updatedList, err = removeUrlFromList(list, url)
+  }
+  return updatedList, err
+}
+
+func wsites(sites []string) (wsites []string) {
+  for _, site := range sites {
+    wsites = append(wsites, fmt.Sprintf("www.%s", site))
+  }
+  return wsites
 }
 
 func updateBlackListWithCli(configuredBlackList []string, options Options) (updatedList []string) {
   updatedList = append(updatedList, configuredBlackList...)
-  if options.Block != "" {
-    updatedList = addUrlToList(updatedList, options.Block)
-    updatedList = addUrlToList(updatedList, wsite(options.Block))
+  updatedList = append(updatedList, state.ListSitesAsStrings()...)
+  // if options.Block != "" {
+  if len(options.Blocks) != 0 {
+    updatedList = addUrlsToList(updatedList, options.Blocks)
+    updatedList = addUrlsToList(updatedList, wsites(options.Blocks))
   }
-  if options.Unblock != "" {
+  if len(options.Unblocks) != 0 {
     var err error
-    updatedList, err = removeUrlFromList(updatedList, options.Unblock)
+    updatedList, err = removeUrlsFromList(updatedList, options.Unblocks)
     if err !=nil {
       fmt.Print(err)
     }
-    updatedList, err = removeUrlFromList(updatedList, wsite(options.Unblock))
+    updatedList, err = removeUrlsFromList(updatedList, wsites(options.Unblocks))
     if err !=nil {
       fmt.Print(err)
     }
@@ -129,11 +162,21 @@ func RunPreflightChecks(config Config) {
   }
 }
 
+func prettyPrintListedSites(sites []Site) {
+  for _, site := range sites {
+    fmt.Println(site.Url)
+  }
+}
+
 func HandleOptions(blacklistConfiguredSites []string, config Config) []string {
   options := ParseOptions()
   if !options.GlobalUnblock {
     blacklistConfiguredSites = getBlackList(config)
     blacklistConfiguredSites = updateBlackListWithCli(blacklistConfiguredSites, options)
+  }
+  if options.List {
+    prettyPrintListedSites(state.ListSites())
+    os.Exit(0)
   }
   return blacklistConfiguredSites
 }
