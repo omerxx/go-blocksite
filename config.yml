@@ -1,18 +1,12 @@
 app:
-  blockTarget: "127.0.0.1"
-  state: "state.json"
+  blockRoute: "0.0.0.0"
+  hostsfile: "/etc/hosts"
+  state: "/tmp/state.json"
 
-# os:
-#   macos: "/etc/hosts"
-#   linux: "/etc/hosts"
-#   windows: "/etc/hosts"
-
-# whitelist:
-#   - somesite
-#
-blacklist:
-  - facebook.com
-  - ynet.co.il
-  - instagram.com
-  - twitter.com
-  - linkedin.com
+blocklist:
+  enabled: true
+  sites:
+    - facebook.com
+    - instagram.com
+    - twitter.com
+    - linkedin.com
