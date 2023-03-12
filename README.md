@@ -7,7 +7,12 @@ GBS was born after a long usage of half-baked browser extensions that were limit
 
 ## Usage
 The way GBS is working is by changing the hosts file on the machine, rerouting targets to localhost instead of the real site.
-For that, it requires that the hosts file has write permissions. The easiest way to achieve that is by running as `sudo` (`sudo go-blocksite`).
+For that, it requires that the hosts file has write permissions. The easiest way to achieve that is by running as `sudo` (`sudo go-blocksite`)
+If running `sudo` everytime is extra annoying to you I can suggest (but I don't take responsibility) to change ownership to your own user by running:
+
+```bash
+sudo chown $(whoami) /etc/hosts
+```
 
 The app is configurable by a `config.yml` where you can set a list of block targets, and/or by command line arguments such as `--block` or `--unblock`.
 
