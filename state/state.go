@@ -2,6 +2,7 @@ package state
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -9,6 +10,41 @@ import (
 	. "github.com/omerxx/go-blocksite/types"
 	"github.com/spf13/viper"
 )
+
+func readState() (state State) {
+	stateFile := viper.GetString("app.state")
+	jsonFile, err := os.Open(stateFile)
+	if err != nil {
+		fmt.Println(err)
+	}
+	byteValue, _ := ioutil.ReadAll(jsonFile)
+	json.Unmarshal(byteValue, &state)
+	defer jsonFile.Close()
+	return
+}
+
+func RemoveUrlFromList(list []string, url string) ([]string, error) {
+	for index, element := range list {
+		if element == url {
+			return append(list[:index], list[index+1:]...), nil
+		}
+	}
+	return nil, errors.New(fmt.Sprintf("Couldnt find %s in %+v", url, list))
+}
+
+func FilterStateListedSites(sites []string) (filteredSites []string) {
+	filteredSites = append(filteredSites, sites...)
+	stateSites := readState().Blacklist
+	for _, site := range sites {
+		for _, stateSite := range stateSites {
+			if site == stateSite.Url {
+				filteredSites, _ = RemoveUrlFromList(filteredSites, stateSite.Url)
+				break
+			}
+		}
+	}
+	return
+}
 
 func isListed(list []Site, target string) bool {
 	for _, site := range list {
@@ -81,4 +117,20 @@ func ListSites() []Site {
 	json.Unmarshal(byteValue, &state)
 	defer jsonFile.Close()
 	return state.Blacklist
+}
+
+func ListSitesAsStrings() (sites []string) {
+	stateFile := viper.GetString("app.state")
+	jsonFile, err := os.Open(stateFile)
+	if err != nil {
+		fmt.Println(err)
+	}
+	var state State
+	byteValue, _ := ioutil.ReadAll(jsonFile)
+	json.Unmarshal(byteValue, &state)
+	defer jsonFile.Close()
+	for _, site := range state.Blacklist {
+		sites = append(sites, site.Url)
+	}
+	return sites
 }
