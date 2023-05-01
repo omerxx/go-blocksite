@@ -17,9 +17,9 @@ func readState() (state State) {
 	if err != nil {
 		fmt.Println(err)
 	}
+	defer jsonFile.Close()
 	byteValue, _ := ioutil.ReadAll(jsonFile)
 	json.Unmarshal(byteValue, &state)
-	defer jsonFile.Close()
 	return
 }
 
@@ -61,6 +61,7 @@ func AddMultiple(targets []string) {
 	if err != nil {
 		fmt.Println(err)
 	}
+	defer jsonFile.Close()
 
 	var state State
 	byteValue, _ := ioutil.ReadAll(jsonFile)
@@ -75,7 +76,6 @@ func AddMultiple(targets []string) {
 
 	file, _ := json.MarshalIndent(state, "", " ")
 	_ = ioutil.WriteFile(stateFile, file, 0644)
-	defer jsonFile.Close()
 }
 
 func RemoveMultiple(targets []string) {
@@ -90,6 +90,7 @@ func remove(target string) {
 	if err != nil {
 		fmt.Println(err)
 	}
+	defer jsonFile.Close()
 
 	var state State
 	byteValue, _ := ioutil.ReadAll(jsonFile)
@@ -103,7 +104,6 @@ func remove(target string) {
 
 	file, _ := json.MarshalIndent(state, "", " ")
 	_ = ioutil.WriteFile(stateFile, file, 0644)
-	defer jsonFile.Close()
 }
 
 func ListSites() []Site {
@@ -112,10 +112,10 @@ func ListSites() []Site {
 	if err != nil {
 		fmt.Println(err)
 	}
+	defer jsonFile.Close()
 	var state State
 	byteValue, _ := ioutil.ReadAll(jsonFile)
 	json.Unmarshal(byteValue, &state)
-	defer jsonFile.Close()
 	return state.Blacklist
 }
 
@@ -125,10 +125,10 @@ func ListSitesAsStrings() (sites []string) {
 	if err != nil {
 		fmt.Println(err)
 	}
+	defer jsonFile.Close()
 	var state State
 	byteValue, _ := ioutil.ReadAll(jsonFile)
 	json.Unmarshal(byteValue, &state)
-	defer jsonFile.Close()
 	for _, site := range state.Blacklist {
 		sites = append(sites, site.Url)
 	}
