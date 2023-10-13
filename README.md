@@ -26,9 +26,14 @@ Usage of go-blocksite:
 
 ## Installation
 Download the latest binary compiled to the desired architecture, and put it in the bin folder so it's part of your user path:
-```bash
 wget https://github.com/omerxx/go-blocksite/downloads... && chmod +x go-blocksite && mv go-blocksite /usr/local/bin/go-blocksite
+
+### Or use an optional package manager:
+* MacOS: 
+```bash
+brew install omerxx/tools/blocksite
 ```
+
 
 ## State
 In order to keep things simple and light, a statefile named `/etc/gbs-state.json` is created and maintained to track block / unblocked websites. The file's name and path are also configurable through the optional
