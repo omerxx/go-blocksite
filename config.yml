@@ -7,6 +7,6 @@ blocklist:
   enabled: true
   sites:
     - facebook.com
-    - instagram.com
     - twitter.com
     - linkedin.com
+    - ynet.co.il
